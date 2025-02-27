@@ -119,8 +119,9 @@ public class Table<T> {
                 query.append("'").append(field.get(obj)).append("',");
             }
             query.setLength(query.length() - 1);
-            query.append(")");
+            query.append("), ");
         }
+        query.setLength(query.length() - 2);
 
         query.append(";");
 

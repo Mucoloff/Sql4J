@@ -37,6 +37,6 @@ java {
 shadowJar {
     archiveBaseName.set('Sql4J')
     archiveClassifier.set('')
-    archiveVersion.set(version + '-compiled')
+    archiveVersion.set(version)
 }
 

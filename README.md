@@ -33,3 +33,5 @@ This project provides a framework for managing database connections and performi
 
 - Java Development Kit (JDK) 21 or higher
 - Gradle
+
+[![](https://jitpack.io/v/Mucoloff/sql4j.svg)](https://jitpack.io/#Mucoloff/sql4j)

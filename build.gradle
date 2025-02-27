@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-group = 'dev.sweety'
+group = 'com.github.Mucoloff'
 version = '1.0-SNAPSHOT'
 
 repositories {
@@ -18,6 +19,14 @@ dependencies {
 
 }
 
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
 java {
     toolchain {
         sourceCompatibility = '21'
@@ -26,7 +35,7 @@ java {
 }
 
 shadowJar {
-    archiveBaseName.set('sql4j')
+    archiveBaseName.set('Sql4J')
     archiveClassifier.set('')
     archiveVersion.set(version)
 }

@@ -67,8 +67,6 @@ public class MySQLConnection implements SQLConnection {
         return "jdbc:mysql://" + host + ":" + port + "/" + database;
     }
 
-    //todo documentazione
-
     @Override
     public String database() {
         return database;

@@ -124,6 +124,9 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
      */
     public String serialize(Object value) {
         if (value == null || isSupported()) return String.valueOf(value);
+
+        if (value instanceof Enum<?> e) return e.name();
+
         return gson.toJson(value);
     }
 
@@ -135,6 +138,12 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
      */
     private Object deserialize(Object object) {
         if (object == null || isSupported()) return object;
+
+        if (field.getType() == Enum.class){
+            // noinspection unchecked
+            return Enum.valueOf(((Class<Enum>) field.getType()), object.toString());
+        }
+
         return gson.fromJson(object.toString(), field.getType());
     }
 

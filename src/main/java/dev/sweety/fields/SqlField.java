@@ -124,7 +124,7 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
         FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
         if (fieldAdapter != null) {
             // noinspection unchecked
-            Adapter<T> adapter = (Adapter<T>) fieldAdapter.clazz().getDeclaredConstructor().newInstance();
+            Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
             return adapter.serialize(value);
         }
 
@@ -148,7 +148,7 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
         FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
         if (fieldAdapter != null) {
             // noinspection unchecked
-            Adapter<T> adapter = (Adapter<T>) fieldAdapter.clazz().getDeclaredConstructor().newInstance();
+            Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
             return adapter.deserialize(str);
         }
 

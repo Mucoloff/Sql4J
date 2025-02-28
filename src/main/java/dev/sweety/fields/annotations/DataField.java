@@ -1,4 +1,4 @@
-package dev.sweety.fields;
+package dev.sweety.fields.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

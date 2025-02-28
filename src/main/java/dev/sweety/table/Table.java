@@ -1,7 +1,7 @@
 package dev.sweety.table;
 
 import dev.sweety.connection.SQLConnection;
-import dev.sweety.fields.DataField;
+import dev.sweety.fields.annotations.DataField;
 import dev.sweety.fields.SqlField;
 
 import java.lang.annotation.ElementType;
@@ -13,7 +13,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import static dev.sweety.Settings.DEBUG;
@@ -30,6 +32,10 @@ public class Table<T> {
     private final List<SqlField> sqlFields;
     private final Class<T> clazz;
     private final SQLConnection connection;
+    private final SqlField primaryKey;
+
+    public static final Map<Class<?>, Table<?>> tables = new HashMap<>();
+
 
     /**
      * Constructs a new Table.
@@ -37,12 +43,15 @@ public class Table<T> {
      * @param name       the table name
      * @param sqlFields  the list of SqlFields
      * @param clazz      the class of the records
+     * @param primaryKey the primaryKey
      * @param connection the SQL connection
      */
-    public Table(String name, List<SqlField> sqlFields, Class<T> clazz, SQLConnection connection) {
+
+    public Table(String name, List<SqlField> sqlFields, Class<T> clazz, SqlField primaryKey, SQLConnection connection) {
         this.name = name;
         this.sqlFields = sqlFields;
         this.clazz = clazz;
+        this.primaryKey = primaryKey;
         this.connection = connection;
     }
 
@@ -65,6 +74,9 @@ public class Table<T> {
      * @return the created Table
      */
     public static <T> Table<T> create(Class<T> clazz, SQLConnection connection) {
+        if (tables.containsKey(clazz))
+            // noinspection unchecked
+            return (Table<T>) tables.get(clazz);
 
         Info info = clazz.getAnnotation(Info.class);
         String name = info != null ? info.name() : clazz.getSimpleName();
@@ -75,11 +87,16 @@ public class Table<T> {
         Field[] fields = clazz.getDeclaredFields();
 
         List<SqlField> sqlFields = new ArrayList<>();
+        SqlField primaryKey = null;
+
 
         for (Field field : fields) {
             if (!field.isAnnotationPresent(DataField.class)) continue;
             SqlField sqlField = SqlField.getFromField(field);
             sqlFields.add(sqlField);
+            if (sqlField.primaryKey())
+                primaryKey = sqlField;
+
             query.append(sqlField.query()).append(", ");
         }
         query.setLength(query.length() - 2);
@@ -87,7 +104,9 @@ public class Table<T> {
 
         connection.execute(query.toString());
 
-        return new Table<>(name, sqlFields, clazz, connection);
+        Table<T> table = new Table<>(name, sqlFields, clazz, primaryKey, connection);
+        tables.put(clazz, table);
+        return table;
 
     }
 
@@ -201,7 +220,7 @@ public class Table<T> {
         query.append(name).append(" WHERE ");
 
         for (SqlField field : sqlFields) {
-            if (field.pk()) {
+            if (field.primaryKey()) {
                 query.append(field.name()).append(" = '").append(field.get(obj)).append("';");
                 break;
             }
@@ -235,7 +254,7 @@ public class Table<T> {
 
         for (SqlField field : sqlFields) {
             String o = field.get(obj);
-            if (field.pk()) {
+            if (field.primaryKey()) {
                 primaryKeyValue = o;
             } else {
                 query.append(field.name()).append(" = '").append(o).append("', ");
@@ -246,13 +265,21 @@ public class Table<T> {
         query.append(" WHERE ");
 
         for (SqlField field : sqlFields) {
-            if (field.pk()) {
+            if (field.primaryKey()) {
                 query.append(field.name()).append(" = '").append(primaryKeyValue).append("';");
                 break;
             }
         }
 
         connection.execute(query.toString());
+    }
+
+    public static <T> void drop(Class<T> clazz, SQLConnection connection) {
+
+        Info info = clazz.getAnnotation(Info.class);
+        String name = tables.containsKey(clazz) ? tables.get(clazz).name() : info != null ? info.name() : clazz.getSimpleName();
+
+        connection.execute("DROP TABLE " + name);
     }
 
     public void drop() {
@@ -277,7 +304,7 @@ public class Table<T> {
             text.append("\n");
         }
 
-        System.out.println(text.toString());
+        System.out.println(text);
     }
 
     public String name() {
@@ -288,6 +315,9 @@ public class Table<T> {
         return clazz;
     }
 
+    public SqlField primaryKey() {
+        return primaryKey;
+    }
 
 
     /**
@@ -303,5 +333,6 @@ public class Table<T> {
          */
         String name();
     }
+
 
 }

@@ -67,6 +67,7 @@ public interface SQLConnection {
      * @param sql the SQL query to execute
      */
     default void execute(final String sql) {
+
         try (Statement stmt = connection().createStatement()) {
             stmt.execute(sql);
             if (DEBUG) System.out.println("query: " + sql);

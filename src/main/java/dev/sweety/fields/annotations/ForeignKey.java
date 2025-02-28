@@ -1,4 +1,4 @@
-package dev.sweety.fields;
+package dev.sweety.fields.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,5 +25,5 @@ public @interface ForeignKey {
      *
      * @return the primary key name
      */
-    String tableId(); //todo
+    String tableId() default "";
 }

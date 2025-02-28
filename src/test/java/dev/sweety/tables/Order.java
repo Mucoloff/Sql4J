@@ -1,9 +1,9 @@
 package dev.sweety.tables;
 
 import dev.sweety.table.Table;
-import dev.sweety.fields.DataField;
-import dev.sweety.fields.ForeignKey;
-import dev.sweety.fields.PrimaryKey;
+import dev.sweety.fields.annotations.DataField;
+import dev.sweety.fields.annotations.ForeignKey;
+import dev.sweety.fields.annotations.PrimaryKey;
 
 /**
  * @author mk$weety
@@ -20,7 +20,7 @@ public class Order {
     String product;
 
     @DataField
-    @ForeignKey(tableId = "id")
+    @ForeignKey
     User user;
 
     /**

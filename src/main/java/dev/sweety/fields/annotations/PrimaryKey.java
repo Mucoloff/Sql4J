@@ -1,4 +1,4 @@
-package dev.sweety.fields;
+package dev.sweety.fields.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -12,9 +12,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface PrimaryKey {
-
-    //todo fix primary key
-    //se non c'è l'autoincrement non crea la colonna
 
     /**
      * Indicates whether the primary key should auto-increment.

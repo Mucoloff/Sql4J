@@ -2,8 +2,8 @@ package dev.sweety;
 
 import dev.sweety.connection.SQLiteConnection;
 import dev.sweety.table.Table;
-import dev.sweety.tables.User;
 import dev.sweety.tables.Order;
+import dev.sweety.tables.User;
 
 import java.sql.SQLException;
 
@@ -13,6 +13,7 @@ public class Main {
         Settings.DEBUG = true;
 
         SQLiteConnection connection = new SQLiteConnection("database");
+
 
         Table<User> users = Table.create(User.class, connection);
         Table<Order> orders = Table.create(Order.class, connection);
@@ -25,6 +26,8 @@ public class Main {
 
         users.print();
         orders.print();
+
+
 
         connection.close();
     }

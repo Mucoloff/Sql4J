@@ -1,24 +1,20 @@
 package dev.sweety.fields;
 
 import com.google.gson.Gson;
+import dev.sweety.fields.annotations.*;
 import dev.sweety.table.Table;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 
 /**
  * @author mk$weety
  * SqlField represents a field in a SQL table with its associated metadata and methods for serialization and deserialization.
  */
-public record SqlField(String name, boolean pk, boolean autoIncrement, boolean fk, String query, String defaultValue,
+public record SqlField(String name, boolean primaryKey, boolean autoIncrement, boolean fk, String query,
+                       String defaultValue,
                        Field field) {
 
     /**
@@ -58,12 +54,12 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
 
             String table = foreignKey.table();
             String tableId = foreignKey.tableId();
+            Class<?> type = field.getType();
 
-            Table.Info tableInfo = field.getType().getAnnotation(Table.Info.class);
-            if (tableInfo != null) {
-                if (table.isBlank() || table.isBlank()){
-                    table = tableInfo.name();
-                }
+            if (Table.tables.containsKey(type)) {
+                Table<?> t = Table.tables.get(type);
+                if (table.isBlank()) table = t.name();
+                if (tableId.isBlank()) tableId = t.primaryKey().name();
             }
 
 
@@ -76,7 +72,7 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
 
         return new SqlField(name, pk, autoIncrement, fk, query.toString(), value, field);
     }
-    
+
     /**
      * Sets the field to be accessible.
      */
@@ -90,10 +86,10 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
      * @param obj the object to set the field value on
      * @param rs  the ResultSet
      * @param <T> the type of the object
-     * @throws SQLException if a database access error occurs
+     * @throws SQLException           if a database access error occurs
      * @throws IllegalAccessException if the field is not accessible
      */
-    public <T> void set(T obj, ResultSet rs) throws SQLException, IllegalAccessException {
+    public <T> void set(T obj, ResultSet rs) throws Exception {
         accessible();
         field.set(obj, deserialize(rs.getObject(name)));
     }
@@ -122,9 +118,17 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
      * @param value the field value
      * @return the serialized value
      */
-    public String serialize(Object value) {
-        if (value == null || isSupported()) return String.valueOf(value);
+    public <T> String serialize(T value) throws Exception {
+        if (value == null) return "null";
 
+        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
+        if (fieldAdapter != null) {
+            // noinspection unchecked
+            Adapter<T> adapter = (Adapter<T>) fieldAdapter.clazz().getDeclaredConstructor().newInstance();
+            return adapter.serialize(value);
+        }
+
+        if (isSupported()) return String.valueOf(value);
         if (value instanceof Enum<?> e) return e.name();
 
         return gson.toJson(value);
@@ -136,17 +140,26 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
      * @param object the serialized value
      * @return the deserialized value
      */
-    private Object deserialize(Object object) {
-        if (object == null || isSupported()) return object;
+    private <T> Object deserialize(Object object) throws Exception {
+        if (object == null) return null;
 
-        if (field.getType() == Enum.class){
+        String str = object.toString();
+
+        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
+        if (fieldAdapter != null) {
             // noinspection unchecked
-            return Enum.valueOf(((Class<Enum>) field.getType()), object.toString());
-
-            //todo annotation for serialize/deserialize
+            Adapter<T> adapter = (Adapter<T>) fieldAdapter.clazz().getDeclaredConstructor().newInstance();
+            return adapter.deserialize(str);
         }
 
-        return gson.fromJson(object.toString(), field.getType());
+        if (isSupported()) return object;
+
+        if (field.getType().isEnum()) {
+            // noinspection unchecked
+            return Enum.valueOf(((Class<Enum>) field.getType()), str);
+        }
+
+        return gson.fromJson(str, field.getType());
     }
 
     /**

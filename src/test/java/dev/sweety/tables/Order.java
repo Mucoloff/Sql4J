@@ -29,6 +29,14 @@ public class Order {
     public Order() {
     }
 
+    public String product() {
+        return product;
+    }
+
+    public User user() {
+        return user;
+    }
+
     /**
      * Constructs a new Order with the specified product and user.
      *

@@ -1,6 +1,6 @@
 package dev.sweety.fields.annotations;
 
-import dev.sweety.fields.Adapter;
+import dev.sweety.fields.adapters.Adapter;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

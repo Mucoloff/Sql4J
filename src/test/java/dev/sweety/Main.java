@@ -8,6 +8,9 @@ import dev.sweety.tables.User;
 import java.sql.SQLException;
 
 public class Main {
+
+    //todo clean code
+
     public static void main(String[] args) throws SQLException {
 
         Settings.DEBUG = true;
@@ -24,9 +27,13 @@ public class Main {
         users.insert(user);
         orders.insert(order);
 
+
+
         users.print();
         orders.print();
 
+
+        System.out.println(order);
 
 
         connection.close();

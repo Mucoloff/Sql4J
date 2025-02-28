@@ -1,9 +1,12 @@
 package dev.sweety.fields;
 
 import com.google.gson.Gson;
+import dev.sweety.connection.SQLConnection;
+import dev.sweety.fields.adapters.Adapter;
 import dev.sweety.fields.annotations.*;
 import dev.sweety.table.Table;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -13,17 +16,18 @@ import java.sql.*;
  * @author mk$weety
  * SqlField represents a field in a SQL table with its associated metadata and methods for serialization and deserialization.
  */
-public record SqlField(String name, boolean primaryKey, boolean autoIncrement, boolean fk, String query,
+public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey, String query,
                        String defaultValue,
-                       Field field) {
+                       Field field, SQLConnection connection) {
 
     /**
      * Creates a SqlField from a Java Field.
      *
-     * @param field the Java Field
+     * @param field      the Java Field
+     * @param connection
      * @return the SqlField
      */
-    public static SqlField getFromField(Field field) {
+    public static SqlField getFromField(Field field, SQLConnection connection) {
         StringBuilder query = new StringBuilder();
 
         DataField info = field.getAnnotation(DataField.class);
@@ -38,31 +42,34 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
         if (!info.value().isEmpty() && !info.value().isBlank()) value = info.value();
 
         PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
-        boolean pk = false, autoIncrement = false, fk = false;
         if (primaryKey != null) {
             query.append(" PRIMARY KEY");
-            pk = true;
             if (primaryKey.autoIncrement()) {
                 query.append(" AUTOINCREMENT");
-                autoIncrement = true;
             }
         }
 
-        ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
-        if (foreignKey != null) {
-            fk = true;
+        boolean hasForeignKey = false;
+        String table = "", tableId = "";
 
-            String table = foreignKey.table();
-            String tableId = foreignKey.tableId();
-            Class<?> type = field.getType();
+        ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
+        Class<?> type = field.getType();
+        if (foreignKey != null) {
+            hasForeignKey = true;
+
+            table = foreignKey.table();
+            tableId = foreignKey.tableId();
 
             if (Table.tables.containsKey(type)) {
                 Table<?> t = Table.tables.get(type);
                 if (table.isBlank()) table = t.name();
                 if (tableId.isBlank()) tableId = t.primaryKey().name();
             }
+        }
 
 
+
+        if (hasForeignKey) {
             query.append(", FOREIGN KEY (").append(name).append(") REFERENCES ")
                     .append(table)
                     .append("(")
@@ -70,7 +77,29 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
                     .append(")");
         }
 
-        return new SqlField(name, pk, autoIncrement, fk, query.toString(), value, field);
+        ForeignKey newForeignKey = getNewForeignKey(table, tableId, hasForeignKey);
+
+        return new SqlField(name, primaryKey, newForeignKey, query.toString(), value, field, connection);
+    }
+
+    private static ForeignKey getNewForeignKey(final String table, final String tableId, boolean hasForeignKey) {
+        return !hasForeignKey ? null : new ForeignKey() {
+
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return ForeignKey.class;
+            }
+
+            @Override
+            public String table() {
+                return table;
+            }
+
+            @Override
+            public String tableId() {
+                return tableId;
+            }
+        };
     }
 
     /**
@@ -110,7 +139,7 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
         }
     }
 
-    private static final Gson gson = new Gson().newBuilder().disableHtmlEscaping().create();
+    public static final Gson gson = new Gson().newBuilder().disableHtmlEscaping().create();
 
     /**
      * Serializes the field value to a string.
@@ -126,6 +155,12 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
             // noinspection unchecked
             Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
             return adapter.serialize(value);
+        }
+
+        if (foreignKey != null) {
+            String s = Table.tables.get(field.getType()).primaryKey().get(value);
+            System.out.println("sssssssssss: " + s);
+            return s;
         }
 
         if (isSupported()) return String.valueOf(value);
@@ -150,6 +185,10 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
             // noinspection unchecked
             Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
             return adapter.deserialize(str);
+        }
+
+        if (foreignKey != null) {
+            return Table.tables.get(field.getType()).selectWhere(foreignKey.tableId() + " = " + str).getFirst();
         }
 
         if (isSupported()) return object;
@@ -229,4 +268,11 @@ public record SqlField(String name, boolean primaryKey, boolean autoIncrement, b
         return false;
     }
 
+    public boolean autoIncrement() {
+        return primaryKey != null && primaryKey.autoIncrement();
+    }
+
+    public boolean hasPrimaryKey() {
+        return primaryKey != null;
+    }
 }

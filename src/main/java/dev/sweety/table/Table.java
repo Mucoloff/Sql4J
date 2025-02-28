@@ -12,10 +12,7 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static dev.sweety.Settings.DEBUG;
@@ -92,9 +89,9 @@ public class Table<T> {
 
         for (Field field : fields) {
             if (!field.isAnnotationPresent(DataField.class)) continue;
-            SqlField sqlField = SqlField.getFromField(field);
+            SqlField sqlField = SqlField.getFromField(field, connection);
             sqlFields.add(sqlField);
-            if (sqlField.primaryKey())
+            if (sqlField.hasPrimaryKey())
                 primaryKey = sqlField;
 
             query.append(sqlField.query()).append(", ");
@@ -113,10 +110,9 @@ public class Table<T> {
     /**
      * Inserts records into the table.
      *
-     * @param objects the records to insert
+     * @param obj the record to insert
      */
-    @SafeVarargs
-    public final void insert(T... objects) {
+    public final void insert(T obj) {
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(name).append("(");
 
@@ -126,25 +122,43 @@ public class Table<T> {
         }
 
         query.setLength(query.length() - 2);
-        query.append(") VALUES ");
+        query.append(") VALUES (");
 
-        for (T obj : objects) {
-
-            query.append("(");
-
-            for (SqlField field : sqlFields) {
-                if (field.autoIncrement()) continue;
-                query.append("'").append(field.get(obj)).append("',");
-            }
-            query.setLength(query.length() - 1);
-            query.append("), ");
+        for (SqlField field : sqlFields) {
+            if (field.autoIncrement()) continue;
+            query.append("'").append(field.get(obj)).append("',");
         }
-        query.setLength(query.length() - 2);
+        query.setLength(query.length() - 1);
 
-        query.append(";");
+        query.append(");");
 
-        connection.execute(query.toString());
+        String sql = query.toString();
+
+        try (Statement stmt = connection().createStatement()) {
+            // Esegui la query e recupera le chiavi generate
+            stmt.execute(sql, Statement.RETURN_GENERATED_KEYS);
+
+            if (DEBUG) System.out.println("query: " + sql);
+
+            // Ottieni la chiave primaria generata dal database
+            try (var rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    Object generatedKey = rs.getObject(1); // Recupera la prima chiave generata
+                    for (SqlField field : sqlFields) {
+                        if (field.hasPrimaryKey()) {
+                            field.accessible();
+                            field.field().set(obj, generatedKey); // Imposta la chiave primaria nell'oggetto
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            if (SHOW_ERROR_QUERIES || DEBUG) System.err.println("query: " + sql);
+            e.printStackTrace();
+        }
     }
+
 
 
     /**
@@ -175,10 +189,11 @@ public class Table<T> {
      * @param predicates the list of predicates
      * @return the list of records
      */
-    public List<T> select(List<Predicate<T>> predicates) {
+    @SafeVarargs
+    public final List<T> select(Predicate<T>... predicates) {
         List<T> resultList = selectAll();
 
-        Predicate<T> combinedPredicate = predicates.stream()
+        Predicate<T> combinedPredicate = Arrays.stream(predicates)
                 .reduce(x -> true, Predicate::and);
 
         return resultList.stream()
@@ -220,7 +235,7 @@ public class Table<T> {
         query.append(name).append(" WHERE ");
 
         for (SqlField field : sqlFields) {
-            if (field.primaryKey()) {
+            if (field.hasPrimaryKey()) {
                 query.append(field.name()).append(" = '").append(field.get(obj)).append("';");
                 break;
             }
@@ -254,7 +269,7 @@ public class Table<T> {
 
         for (SqlField field : sqlFields) {
             String o = field.get(obj);
-            if (field.primaryKey()) {
+            if (field.hasPrimaryKey()) {
                 primaryKeyValue = o;
             } else {
                 query.append(field.name()).append(" = '").append(o).append("', ");
@@ -265,7 +280,7 @@ public class Table<T> {
         query.append(" WHERE ");
 
         for (SqlField field : sqlFields) {
-            if (field.primaryKey()) {
+            if (field.hasPrimaryKey()) {
                 query.append(field.name()).append(" = '").append(primaryKeyValue).append("';");
                 break;
             }
@@ -290,18 +305,16 @@ public class Table<T> {
         StringBuilder text = new StringBuilder();
         text.append("Table: ").append(name).append("\n");
 
-        // Print column headers
         for (SqlField field : sqlFields) {
-            text.append(field.name()).append("\t");
+            text.append("| ").append(field.name()).append(" ");
         }
-        text.append("\n");
+        text.append("|\n");
 
-        // Print rows
         for (T record : selectAll()) {
             for (SqlField field : sqlFields) {
-                text.append(field.get(record)).append("\t");
+                text.append("| ").append(field.get(record)).append(" ");
             }
-            text.append("\n");
+            text.append("|\n");
         }
 
         System.out.println(text);

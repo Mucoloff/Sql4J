@@ -1,4 +1,4 @@
-package dev.sweety.fields;
+package dev.sweety.fields.adapters;
 
 public interface Adapter<T> {
     String serialize(T value);

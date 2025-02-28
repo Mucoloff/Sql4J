@@ -142,6 +142,8 @@ public record SqlField(String name, boolean pk, boolean autoIncrement, boolean f
         if (field.getType() == Enum.class){
             // noinspection unchecked
             return Enum.valueOf(((Class<Enum>) field.getType()), object.toString());
+
+            //todo annotation for serialize/deserialize
         }
 
         return gson.fromJson(object.toString(), field.getType());

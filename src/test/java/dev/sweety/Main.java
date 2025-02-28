@@ -12,24 +12,20 @@ public class Main {
 
         Settings.DEBUG = true;
 
-        SQLiteConnection sqLite = new SQLiteConnection("database");
+        SQLiteConnection connection = new SQLiteConnection("database");
 
-        Table<User> users = Table.create(User.class, sqLite);
-        Table<Order> orders = Table.create(Order.class, sqLite);
+        Table<User> users = Table.create(User.class, connection);
+        Table<Order> orders = Table.create(Order.class, connection);
 
-        User user = new User("user");
-        users.insert(user);
-
-
+        User user = new User("User");
         Order order = new Order("Product", user);
+
+        users.insert(user);
         orders.insert(order);
 
-        System.out.println("users:");
-        users.selectAll().forEach(System.out::println);
+        users.print();
+        orders.print();
 
-        System.out.println("orders");
-        orders.selectAll().forEach(System.out::println);
-
-        sqLite.close();
+        connection.close();
     }
 }

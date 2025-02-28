@@ -3,6 +3,7 @@ package dev.sweety.tables;
 import dev.sweety.table.Table;
 import dev.sweety.table.fields.DataField;
 import dev.sweety.table.fields.ForeignKey;
+import dev.sweety.table.fields.PrimaryKey;
 
 /**
  * @author mk$weety
@@ -12,6 +13,7 @@ import dev.sweety.table.fields.ForeignKey;
 public class Order {
 
     @DataField
+    @PrimaryKey(autoIncrement = true)
     int orderId;
 
     @DataField

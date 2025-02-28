@@ -255,7 +255,28 @@ public class Table<T> {
 
         connection.execute(query.toString());
     }
-    
+
+    public void print() {
+        StringBuilder text = new StringBuilder();
+        text.append("Table: ").append(name).append("\n");
+
+        // Print column headers
+        for (SqlField field : sqlFields) {
+            text.append(field.name()).append("\t");
+        }
+        text.append("\n");
+
+        // Print rows
+        for (T record : selectAll()) {
+            for (SqlField field : sqlFields) {
+                text.append(field.get(record)).append("\t");
+            }
+            text.append("\n");
+        }
+
+        System.out.println(text.toString());
+    }
+
     /**
      * Info is an annotation used to define metadata for a table.
      */

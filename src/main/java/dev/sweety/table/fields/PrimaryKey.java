@@ -13,6 +13,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface PrimaryKey {
 
+    //todo fix primary key
+    //se non c'è l'autoincrement non crea la colonna
+
     /**
      * Indicates whether the primary key should auto-increment.
      *

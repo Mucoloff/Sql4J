@@ -1,4 +1,4 @@
-package dev.sweety.table.fields;
+package dev.sweety.fields;
 
 import com.google.gson.Gson;
 import dev.sweety.table.Table;

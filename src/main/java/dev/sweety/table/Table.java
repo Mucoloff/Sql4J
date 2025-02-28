@@ -1,8 +1,8 @@
 package dev.sweety.table;
 
 import dev.sweety.connection.SQLConnection;
-import dev.sweety.table.fields.DataField;
-import dev.sweety.table.fields.SqlField;
+import dev.sweety.fields.DataField;
+import dev.sweety.fields.SqlField;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,10 +20,9 @@ import static dev.sweety.Settings.DEBUG;
 import static dev.sweety.Settings.SHOW_ERROR_QUERIES;
 
 /**
+ * @param <T> the type of the records in the table
  * @author mk$weety
  * Table represents a SQL table with methods for creating, inserting, selecting, updating, and deleting records.
- *
- * @param <T> the type of the records in the table
  */
 public class Table<T> {
 
@@ -56,7 +55,7 @@ public class Table<T> {
     public Connection connection() throws SQLException {
         return connection.connection();
     }
-    
+
     /**
      * Creates a new Table from a class and a SQL connection.
      *
@@ -168,7 +167,7 @@ public class Table<T> {
                 .toList();
     }
 
-    
+
     private List<T> select(String query) {
         List<T> resultList = new ArrayList<>();
 
@@ -220,12 +219,12 @@ public class Table<T> {
         String query = "DELETE FROM " + name + " WHERE " + filter;
         connection.execute(query);
     }
-    
+
     /**
      * Updates a record in the table.
      *
      * @param obj the record to update
-     * @throws SQLException if a database access error occurs
+     * @throws SQLException           if a database access error occurs
      * @throws IllegalAccessException if the field is not accessible
      */
     public void update(T obj) throws SQLException, IllegalAccessException {
@@ -256,6 +255,10 @@ public class Table<T> {
         connection.execute(query.toString());
     }
 
+    public void drop() {
+        connection.execute("DROP TABLE " + name);
+    }
+
     public void print() {
         StringBuilder text = new StringBuilder();
         text.append("Table: ").append(name).append("\n");
@@ -276,6 +279,16 @@ public class Table<T> {
 
         System.out.println(text.toString());
     }
+
+    public String name() {
+        return name;
+    }
+
+    public Class<T> clazz() {
+        return clazz;
+    }
+
+
 
     /**
      * Info is an annotation used to define metadata for a table.

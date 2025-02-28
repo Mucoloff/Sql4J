@@ -1,9 +1,9 @@
 package dev.sweety.tables;
 
 import dev.sweety.table.Table;
-import dev.sweety.table.fields.DataField;
-import dev.sweety.table.fields.ForeignKey;
-import dev.sweety.table.fields.PrimaryKey;
+import dev.sweety.fields.DataField;
+import dev.sweety.fields.ForeignKey;
+import dev.sweety.fields.PrimaryKey;
 
 /**
  * @author mk$weety

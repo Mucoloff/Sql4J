@@ -31,15 +31,18 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         StringBuilder query = new StringBuilder();
 
         DataField info = field.getAnnotation(DataField.class);
-        String name = info.name().isEmpty() ? field.getName() : info.name();
+        String name = info == null || info.name().isEmpty() ? field.getName() : info.name();
 
         query.append(name).append(" ").append(getType(field));
 
         String value = null;
 
-        if (info.notNull()) query.append(" NOTNULL");
-        if (info.unique()) query.append(" UNIQUE");
-        if (!info.value().isEmpty() && !info.value().isBlank()) value = info.value();
+        if (info != null) {
+            if (info.notNull()) query.append(" NOTNULL");
+            if (info.unique()) query.append(" UNIQUE");
+            if (!info.value().isEmpty() && !info.value().isBlank()) value = info.value();
+
+        }
 
         PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
         if (primaryKey != null) {
@@ -66,7 +69,6 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
                 if (tableId.isBlank()) tableId = t.primaryKey().name();
             }
         }
-
 
 
         if (hasForeignKey) {

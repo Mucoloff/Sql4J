@@ -1,7 +1,7 @@
 package dev.sweety.table;
 
 import dev.sweety.connection.SQLConnection;
-import dev.sweety.fields.annotations.DataField;
+import dev.sweety.fields.annotations.*;
 import dev.sweety.fields.SqlField;
 
 import java.lang.annotation.ElementType;
@@ -88,7 +88,8 @@ public class Table<T> {
 
 
         for (Field field : fields) {
-            if (!field.isAnnotationPresent(DataField.class)) continue;
+            //todo
+            if (!isSqlField(field)) continue;
             SqlField sqlField = SqlField.getFromField(field, connection);
             sqlFields.add(sqlField);
             if (sqlField.hasPrimaryKey())
@@ -105,6 +106,15 @@ public class Table<T> {
         tables.put(clazz, table);
         return table;
 
+    }
+
+    private static boolean isSqlField(Field field) {
+        return field.isAnnotationPresent(DataField.class)
+        ||
+                field.isAnnotationPresent(ForeignKey.class) ||
+                field.isAnnotationPresent(PrimaryKey.class) ||
+                field.isAnnotationPresent(SqlType.class) ||
+                field.isAnnotationPresent(FieldAdapter.class);
     }
 
     /**

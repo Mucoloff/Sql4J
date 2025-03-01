@@ -1,13 +1,18 @@
 package dev.sweety.fields;
 
 import com.google.gson.Gson;
-import dev.sweety.connection.SQLConnection;
-import dev.sweety.fields.adapters.Adapter;
-import dev.sweety.fields.annotations.*;
+import dev.sweety.annotations.adapter.FieldAdapter;
+import dev.sweety.annotations.adapter.SqlType;
+import dev.sweety.annotations.field.DataField;
+import dev.sweety.annotations.field.ForeignKey;
+import dev.sweety.annotations.field.PrimaryKey;
+import dev.sweety.api.SQLConnection;
+import dev.sweety.api.Adapter;
 import dev.sweety.table.Table;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
@@ -20,13 +25,6 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
                        String defaultValue,
                        Field field, SQLConnection connection) {
 
-    /**
-     * Creates a SqlField from a Java Field.
-     *
-     * @param field      the Java Field
-     * @param connection
-     * @return the SqlField
-     */
     public static SqlField getFromField(Field field, SQLConnection connection) {
         StringBuilder query = new StringBuilder();
 
@@ -104,34 +102,15 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         };
     }
 
-    /**
-     * Sets the field to be accessible.
-     */
     public void accessible() {
         field.setAccessible(true);
     }
 
-    /**
-     * Sets the value of the field from a ResultSet.
-     *
-     * @param obj the object to set the field value on
-     * @param rs  the ResultSet
-     * @param <T> the type of the object
-     * @throws SQLException           if a database access error occurs
-     * @throws IllegalAccessException if the field is not accessible
-     */
-    public <T> void set(T obj, ResultSet rs) throws Exception {
+    public <T> void set(T obj, Object value) throws SQLException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         accessible();
-        field.set(obj, deserialize(rs.getObject(name)));
+        field.set(obj, deserialize(value));
     }
 
-    /**
-     * Gets the value of the field as a string.
-     *
-     * @param obj the object to get the field value from
-     * @param <T> the type of the object
-     * @return the field value as a string
-     */
     public <T> String get(T obj) {
         try {
             accessible();
@@ -143,13 +122,7 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
 
     public static final Gson gson = new Gson().newBuilder().disableHtmlEscaping().create();
 
-    /**
-     * Serializes the field value to a string.
-     *
-     * @param value the field value
-     * @return the serialized value
-     */
-    public <T> String serialize(T value) throws Exception {
+    public <T> String serialize(T value) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         if (value == null) return "null";
 
         FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
@@ -160,9 +133,7 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         }
 
         if (foreignKey != null) {
-            String s = Table.tables.get(field.getType()).primaryKey().get(value);
-            System.out.println("sssssssssss: " + s);
-            return s;
+            return Table.tables.get(field.getType()).primaryKey().get(value);
         }
 
         if (isSupported()) return String.valueOf(value);
@@ -171,13 +142,7 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         return gson.toJson(value);
     }
 
-    /**
-     * Deserializes the field value from a string.
-     *
-     * @param object the serialized value
-     * @return the deserialized value
-     */
-    private <T> Object deserialize(Object object) throws Exception {
+    private <T> Object deserialize(Object object) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, SQLException {
         if (object == null) return null;
 
         String str = object.toString();
@@ -203,12 +168,6 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         return gson.fromJson(str, field.getType());
     }
 
-    /**
-     * Gets the SQL type of the field.
-     *
-     * @param field the Java Field
-     * @return the SQL type
-     */
     private static String getType(Field field) {
         Class<?> type = field.getType();
 
@@ -238,11 +197,6 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         return "TEXT";
     }
 
-    /**
-     * Checks if the field type is supported.
-     *
-     * @return true if the field type is supported, false otherwise
-     */
     public boolean isSupported() {
         Class<?> type = field.getType();
 

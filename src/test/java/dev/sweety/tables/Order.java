@@ -1,15 +1,15 @@
 package dev.sweety.tables;
 
-import dev.sweety.table.Table;
-import dev.sweety.fields.annotations.DataField;
-import dev.sweety.fields.annotations.ForeignKey;
-import dev.sweety.fields.annotations.PrimaryKey;
+import dev.sweety.annotations.table.Info;
+import dev.sweety.annotations.field.DataField;
+import dev.sweety.annotations.field.ForeignKey;
+import dev.sweety.annotations.field.PrimaryKey;
 
 /**
  * @author mk$weety
  * Order represents an order in the system with a product and a user.
  */
-@Table.Info(name = "orders")
+@Info(name = "orders")
 public class Order {
 
     @DataField

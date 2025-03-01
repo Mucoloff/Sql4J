@@ -1,14 +1,14 @@
 package dev.sweety.tables;
 
-import dev.sweety.table.Table;
-import dev.sweety.fields.annotations.DataField;
-import dev.sweety.fields.annotations.PrimaryKey;
+import dev.sweety.annotations.table.Info;
+import dev.sweety.annotations.field.DataField;
+import dev.sweety.annotations.field.PrimaryKey;
 
 /**
  * @author mk$weety
  * User represents a user in the system with an ID and a name.
  */
-@Table.Info(name = "users")
+@Info(name = "users")
 public class User {
 
     @DataField

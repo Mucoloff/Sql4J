@@ -1,6 +1,7 @@
-package dev.sweety.connection;
+package dev.sweety.api;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -55,25 +56,27 @@ public interface SQLConnection {
      *
      * @throws SQLException if a database access error occurs
      */
-    default void close() throws SQLException {
-        if (connection() != null && !connection().isClosed()) {
-            connection().close();
-        }
-    }
+    void close() throws SQLException;
 
     /**
      * Executes a SQL query.
      *
      * @param sql the SQL query to execute
      */
-    default void execute(final String sql) {
+    default void execute(final String sql, Object... params) {
+        try (Connection connection = connection(); PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try (Statement stmt = connection().createStatement()) {
-            stmt.execute(sql);
+            for (int i = 0; i < params.length; i++) {
+                statement.setObject(i + 1, params[i]);
+            }
+
+            statement.execute();
+
             if (DEBUG) System.out.println("query: " + sql);
         } catch (Exception e) {
             if (SHOW_ERROR_QUERIES || DEBUG) System.err.println("query: " + sql);
             e.printStackTrace();
         }
     }
+
 }

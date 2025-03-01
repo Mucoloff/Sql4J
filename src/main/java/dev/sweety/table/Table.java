@@ -9,17 +9,14 @@ import dev.sweety.annotations.table.Info;
 import dev.sweety.api.ITable;
 import dev.sweety.api.SQLConnection;
 import dev.sweety.fields.SqlField;
+import dev.sweety.table.executor.TableAsyncExecutor;
+import dev.sweety.table.executor.TableExecutor;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
-
-import static dev.sweety.Settings.DEBUG;
-import static dev.sweety.Settings.SHOW_ERROR_QUERIES;
 
 /**
  * @param <T> the type of the records in the table
@@ -34,8 +31,8 @@ public class Table<T> implements ITable<T> {
     private final SQLConnection connection;
     private final SqlField primaryKey;
 
-    private final TableExecutor tableExecutor;
-    private final TableAsyncExecutor tableAsyncExecutor;
+    private final TableExecutor<T> tableExecutor;
+    private final TableAsyncExecutor<T> tableAsyncExecutor;
 
     public Table(String name, List<SqlField> sqlFields, Class<T> clazz, SqlField primaryKey, SQLConnection connection) {
         this.name = name;
@@ -43,8 +40,8 @@ public class Table<T> implements ITable<T> {
         this.clazz = clazz;
         this.primaryKey = primaryKey;
         this.connection = connection;
-        this.tableExecutor = new TableExecutor();
-        this.tableAsyncExecutor = new TableAsyncExecutor();
+        this.tableExecutor = new TableExecutor<>(this, connection);
+        this.tableAsyncExecutor = new TableAsyncExecutor<>(this, connection);
     }
 
     @Override

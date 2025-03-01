@@ -5,6 +5,9 @@ import dev.sweety.api.SQLConnection;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.concurrent.Executor;
+
+import static dev.sweety.SqlUtils.EXECUTOR;
 
 /**
  * @author mk$weety
@@ -49,6 +52,11 @@ public class SQLiteConnection implements SQLConnection {
     @Override
     public void close() throws SQLException {
         if (connection != null && !connection.isClosed()) connection.close();
+    }
+
+    @Override
+    public Executor executor() {
+        return EXECUTOR;
     }
 
     /**

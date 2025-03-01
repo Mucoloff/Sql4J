@@ -5,6 +5,9 @@ import dev.sweety.api.SQLConnection;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.concurrent.Executor;
+
+import static dev.sweety.SqlUtils.EXECUTOR;
 
 /**
  * @author mk$weety
@@ -67,6 +70,11 @@ public class MySQLConnection implements SQLConnection {
     @Override
     public String url() {
         return "jdbc:mysql://" + host + ":" + port + "/" + database;
+    }
+
+    @Override
+    public Executor executor() {
+        return EXECUTOR;
     }
 
     @Override

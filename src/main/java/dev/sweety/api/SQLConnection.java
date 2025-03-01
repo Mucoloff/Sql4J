@@ -1,9 +1,8 @@
 package dev.sweety.api;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import static dev.sweety.Settings.DEBUG;
 import static dev.sweety.Settings.SHOW_ERROR_QUERIES;
@@ -36,6 +35,8 @@ public interface SQLConnection {
      * @return the connection URL
      */
     String url();
+
+    Executor executor();
 
     /**
      * Returns the database name.
@@ -79,11 +80,8 @@ public interface SQLConnection {
         }
     }
 
-
-    /*
-
-    public <T> T execute(String query, StatementConsumer<T> function) {
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
+    default <T> T execute(String query, StatementConsumer<T> function) {
+        try (PreparedStatement statement = connection().prepareStatement(query)) {
             return function.accept(statement);
         } catch (SQLException e) {
             e.printStackTrace(System.err);
@@ -92,12 +90,12 @@ public interface SQLConnection {
         return null;
     }
 
-    public <T> CompletableFuture<T> executeAsync(String query, StatementConsumer<T> function) {
-        return CompletableFuture.supplyAsync(() -> execute(query, function), getExecutor());
+    default <T> CompletableFuture<T> executeAsync(String query, StatementConsumer<T> function) {
+        return CompletableFuture.supplyAsync(() -> execute(query, function), executor());
     }
 
-    public ResultSet executeQuery(String query, Object... params) {
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
+    default ResultSet executeQuery(String query, Object... params) {
+        try (PreparedStatement statement = connection().prepareStatement(query)) {
             setParameters(statement, params);
 
             return statement.executeQuery();
@@ -108,12 +106,12 @@ public interface SQLConnection {
         return null;
     }
 
-    public CompletableFuture<ResultSet> executeQueryAsync(String query, Object... params) {
-        return CompletableFuture.supplyAsync(() -> executeQuery(query, params), getExecutor());
+    default CompletableFuture<ResultSet> executeQueryAsync(String query, Object... params) {
+        return CompletableFuture.supplyAsync(() -> executeQuery(query, params), executor());
     }
 
-    public int executeUpdate(String query, Object... params) {
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
+    default int executeUpdate(String query, Object... params) {
+        try (PreparedStatement statement = connection().prepareStatement(query)) {
             setParameters(statement, params);
 
             return statement.executeUpdate();
@@ -124,8 +122,8 @@ public interface SQLConnection {
         return -1;
     }
 
-    public CompletableFuture<Integer> executeUpdateAsync(String query, Object... params) {
-        return CompletableFuture.supplyAsync(() -> executeUpdate(query, params), getExecutor());
+    default CompletableFuture<Integer> executeUpdateAsync(String query, Object... params) {
+        return CompletableFuture.supplyAsync(() -> executeUpdate(query, params), executor());
     }
 
     private void setParameters(PreparedStatement statement, Object[] params) throws SQLException {
@@ -133,7 +131,5 @@ public interface SQLConnection {
             statement.setObject(i + 1, params[i]);
         }
     }
-
-    * */
 
 }

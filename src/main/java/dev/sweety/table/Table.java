@@ -34,12 +34,17 @@ public class Table<T> implements ITable<T> {
     private final SQLConnection connection;
     private final SqlField primaryKey;
 
+    private final TableExecutor tableExecutor;
+    private final TableAsyncExecutor tableAsyncExecutor;
+
     public Table(String name, List<SqlField> sqlFields, Class<T> clazz, SqlField primaryKey, SQLConnection connection) {
         this.name = name;
         this.sqlFields = sqlFields;
         this.clazz = clazz;
         this.primaryKey = primaryKey;
         this.connection = connection;
+        this.tableExecutor = new TableExecutor();
+        this.tableAsyncExecutor = new TableAsyncExecutor();
     }
 
     @Override

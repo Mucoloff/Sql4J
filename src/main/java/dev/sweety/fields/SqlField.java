@@ -1,16 +1,13 @@
 package dev.sweety.fields;
 
 import com.google.gson.Gson;
+import dev.sweety.SqlUtils;
 import dev.sweety.annotations.adapter.FieldAdapter;
-import dev.sweety.annotations.adapter.SqlType;
-import dev.sweety.annotations.field.DataField;
 import dev.sweety.annotations.field.ForeignKey;
 import dev.sweety.annotations.field.PrimaryKey;
-import dev.sweety.api.SQLConnection;
 import dev.sweety.api.Adapter;
-import dev.sweety.table.Table;
+import dev.sweety.api.SQLConnection;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -24,83 +21,6 @@ import java.sql.*;
 public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey, String query,
                        String defaultValue,
                        Field field, SQLConnection connection) {
-
-    public static SqlField getFromField(Field field, SQLConnection connection) {
-        StringBuilder query = new StringBuilder();
-
-        DataField info = field.getAnnotation(DataField.class);
-        String name = info == null || info.name().isEmpty() ? field.getName() : info.name();
-
-        query.append(name).append(" ").append(getType(field));
-
-        String value = null;
-
-        if (info != null) {
-            if (info.notNull()) query.append(" NOTNULL");
-            if (info.unique()) query.append(" UNIQUE");
-            if (!info.value().isEmpty() && !info.value().isBlank()) value = info.value();
-
-        }
-
-        PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
-        if (primaryKey != null) {
-            query.append(" PRIMARY KEY");
-            if (primaryKey.autoIncrement()) {
-                query.append(" AUTOINCREMENT");
-            }
-        }
-
-        boolean hasForeignKey = false;
-        String table = "", tableId = "";
-
-        ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
-        Class<?> type = field.getType();
-        if (foreignKey != null) {
-            hasForeignKey = true;
-
-            table = foreignKey.table();
-            tableId = foreignKey.tableId();
-
-            if (Table.tables.containsKey(type)) {
-                Table<?> t = Table.tables.get(type);
-                if (table.isBlank()) table = t.name();
-                if (tableId.isBlank()) tableId = t.primaryKey().name();
-            }
-        }
-
-
-        if (hasForeignKey) {
-            query.append(", FOREIGN KEY (").append(name).append(") REFERENCES ")
-                    .append(table)
-                    .append("(")
-                    .append(tableId)
-                    .append(")");
-        }
-
-        ForeignKey newForeignKey = getNewForeignKey(table, tableId, hasForeignKey);
-
-        return new SqlField(name, primaryKey, newForeignKey, query.toString(), value, field, connection);
-    }
-
-    private static ForeignKey getNewForeignKey(final String table, final String tableId, boolean hasForeignKey) {
-        return !hasForeignKey ? null : new ForeignKey() {
-
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return ForeignKey.class;
-            }
-
-            @Override
-            public String table() {
-                return table;
-            }
-
-            @Override
-            public String tableId() {
-                return tableId;
-            }
-        };
-    }
 
     public void accessible() {
         field.setAccessible(true);
@@ -133,7 +53,7 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         }
 
         if (foreignKey != null) {
-            return Table.tables.get(field.getType()).primaryKey().get(value);
+            return SqlUtils.tables.get(field.getType()).primaryKey().get(value);
         }
 
         if (isSupported()) return String.valueOf(value);
@@ -155,7 +75,7 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         }
 
         if (foreignKey != null) {
-            return Table.tables.get(field.getType()).selectWhere(foreignKey.tableId() + " = " + str).getFirst();
+            return SqlUtils.tables.get(field.getType()).selectWhere(foreignKey.tableId() + " = " + str).getFirst();
         }
 
         if (isSupported()) return object;
@@ -166,35 +86,6 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         }
 
         return gson.fromJson(str, field.getType());
-    }
-
-    private static String getType(Field field) {
-        Class<?> type = field.getType();
-
-        SqlType sqlType = field.getAnnotation(SqlType.class);
-
-        if (sqlType != null) return sqlType.type();
-
-        if (type == String.class) return "TEXT";
-        if (type == int.class || type == Integer.class) return "INTEGER";
-        if (type == long.class || type == Long.class) return "BIGINT";
-        if (type == double.class || type == Double.class) return "DOUBLE";
-        if (type == float.class || type == Float.class) return "FLOAT";
-        if (type == boolean.class || type == Boolean.class) return "BOOLEAN";
-        if (type == byte.class || type == Byte.class) return "TINYINT";
-        if (type == short.class || type == Short.class) return "SMALLINT";
-        if (type == char.class || type == Character.class) return "CHAR";
-
-        if (type == Date.class) return "DATE";
-        if (type == Time.class) return "TIME";
-        if (type == Timestamp.class) return "TIMESTAMP";
-        if (type == Blob.class) return "BLOB";
-        if (type == Clob.class) return "CLOB";
-
-        if (type == BigDecimal.class) return "DECIMAL";
-        if (type == BigInteger.class) return "NUMERIC";
-
-        return "TEXT";
     }
 
     public boolean isSupported() {

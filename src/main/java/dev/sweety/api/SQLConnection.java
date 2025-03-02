@@ -4,9 +4,6 @@ import java.sql.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import static dev.sweety.Settings.DEBUG;
-import static dev.sweety.Settings.SHOW_ERROR_QUERIES;
-
 /**
  * @author mk$weety
  * SQLConnection is an interface that defines methods for connecting to a SQL database and executing queries.
@@ -58,27 +55,6 @@ public interface SQLConnection {
      * @throws SQLException if a database access error occurs
      */
     void close() throws SQLException;
-
-    /**
-     * Executes a SQL query.
-     *
-     * @param sql the SQL query to execute
-     */
-    default void execute(final String sql, Object... params) {
-        try (Connection connection = connection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            for (int i = 0; i < params.length; i++) {
-                statement.setObject(i + 1, params[i]);
-            }
-
-            statement.execute();
-
-            if (DEBUG) System.out.println("query: " + sql);
-        } catch (Exception e) {
-            if (SHOW_ERROR_QUERIES || DEBUG) System.err.println("query: " + sql);
-            e.printStackTrace();
-        }
-    }
 
     default <T> T execute(String query, StatementConsumer<T> function) {
         try (PreparedStatement statement = connection().prepareStatement(query)) {

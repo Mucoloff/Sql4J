@@ -13,7 +13,6 @@ import java.util.function.Predicate;
 
 import static dev.sweety.Settings.DEBUG;
 
-//todo make methods abstract
 public interface ITable<T> {
 
     Connection connection() throws SQLException;

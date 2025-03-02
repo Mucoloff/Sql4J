@@ -14,8 +14,8 @@ public class Main {
 
         SQLiteConnection connection = new SQLiteConnection("database");
 
-        Table<User> users = Table.create(User.class, connection);
-        Table<Order> orders = Table.create(Order.class, connection);
+        Table<User> users = SqlUtils.create(User.class, connection);
+        Table<Order> orders = SqlUtils.create(Order.class, connection);
 
         User user = new User("User");
         Order order = new Order("Product", user);

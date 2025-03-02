@@ -1,8 +1,8 @@
-package dev.sweety.table;
+package dev.sweety.sql4j.table;
 
 import dev.sweety.api.sql4j.connection.SQLConnection;
 import dev.sweety.api.sql4j.table.ITable;
-import dev.sweety.fields.SqlField;
+import dev.sweety.sql4j.fields.SqlField;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;

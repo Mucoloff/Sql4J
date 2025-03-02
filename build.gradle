@@ -16,10 +16,6 @@ dependencies {
     implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
 
     implementation 'com.google.code.gson:gson:2.8.9'
-
-    var api = project(':Sql4J-api')
-    implementation api
-    compileOnly api
 }
 
 publishing {
@@ -42,7 +38,7 @@ shadowJar {
     archiveClassifier.set('')
     archiveVersion.set(version)
     dependencies {
-        include(dependency(':Sql4J-api'))
+
     }
 }
 

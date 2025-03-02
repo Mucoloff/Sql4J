@@ -1,4 +1,4 @@
-package dev.sweety.fields;
+package dev.sweety.sql4j.fields;
 
 import dev.sweety.api.sql4j.SqlUtils;
 import dev.sweety.api.sql4j.adapter.Adapter;
@@ -8,14 +8,11 @@ import dev.sweety.api.sql4j.field.DataField;
 import dev.sweety.api.sql4j.field.ForeignKey;
 import dev.sweety.api.sql4j.field.IField;
 import dev.sweety.api.sql4j.field.PrimaryKey;
-import dev.sweety.table.Table;
-import dev.sweety.table.TableManager;
+import dev.sweety.sql4j.table.Table;
+import dev.sweety.sql4j.table.TableManager;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -80,31 +77,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         return new SqlField(name, field, connection, primaryKey, newForeignKey, query.toString(), defaultValue);
     }
 
-    public boolean isSupported() {
-        Class<?> type = field.getType();
-
-        if (type.isPrimitive()) return true;
-
-        if (type == String.class) return true;
-        if (type == int.class || type == Integer.class) return true;
-        if (type == long.class || type == Long.class) return true;
-        if (type == double.class || type == Double.class) return true;
-        if (type == float.class || type == Float.class) return true;
-        if (type == boolean.class || type == Boolean.class) return true;
-        if (type == byte.class || type == Byte.class) return true;
-        if (type == short.class || type == Short.class) return true;
-        if (type == char.class || type == Character.class) return true;
-
-        if (type == Date.class) return true;
-        if (type == Time.class) return true;
-        if (type == Timestamp.class) return true;
-        if (type == Blob.class) return true;
-        if (type == Clob.class) return true;
-
-        if (type == BigDecimal.class) return true;
-        return type == BigInteger.class;
-    }
-
+    @Override
     public <T> String get(T entity) {
         field.setAccessible(true);
         try {
@@ -115,6 +88,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         return null;
     }
 
+    @Override
     public <T> void set(T entity, Object value) {
         field.setAccessible(true);
         try {
@@ -124,6 +98,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         }
     }
 
+    @Override
     public <T> String serialize(T value) throws Exception {
         if (value == null) return "null";
 
@@ -145,6 +120,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         return gson.toJson(value);
     }
 
+    @Override
     public <T> Object deserialize(Object object) throws Exception {
         if (object == null) return null;
 
@@ -172,6 +148,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         return gson.fromJson(str, field.getType());
     }
 
+    @Override
     public <T> CompletableFuture<String> getAsync(T entity) {
         field.setAccessible(true);
         try {
@@ -182,6 +159,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         return CompletableFuture.completedFuture(null);
     }
 
+    @Override
     public <T> CompletableFuture<Void> setAsync(T entity, Object value)  {
         field.setAccessible(true);
         try {
@@ -198,6 +176,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         return null;
     }
 
+    @Override
     public <T> CompletableFuture<String> serializeAsync(T value) {
         if (value == null) return CompletableFuture.completedFuture("null");
 
@@ -229,6 +208,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         }, connection.executor());
     }
 
+    @Override
     public <T> CompletableFuture<Object> deserializeAsync(Object object) throws Exception {
         if (object == null) return CompletableFuture.completedFuture(null);
 

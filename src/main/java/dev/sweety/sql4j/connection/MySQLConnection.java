@@ -1,4 +1,4 @@
-package dev.sweety.connection;
+package dev.sweety.sql4j.connection;
 
 import dev.sweety.api.sql4j.connection.SQLConnection;
 
@@ -9,11 +9,6 @@ import java.util.concurrent.Executor;
 
 import static dev.sweety.api.sql4j.SqlUtils.EXECUTOR;
 
-/**
- * @author mk$weety
- * MySQLConnection provides methods to connect to a MySQL database.
- */
-
 public class MySQLConnection implements SQLConnection {
     private String host;
     private int port;
@@ -22,15 +17,6 @@ public class MySQLConnection implements SQLConnection {
     private String password;
     private Connection connection;
 
-    /**
-     * Constructs a new MySQLConnection.
-     *
-     * @param host     the database host
-     * @param port     the database port
-     * @param database the database name
-     * @param user     the database user
-     * @param password the database password
-     */
     public MySQLConnection(String host, int port, String database, String user, String password) {
         this.host = host;
         this.port = port;

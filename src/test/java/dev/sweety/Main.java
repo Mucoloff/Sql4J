@@ -1,9 +1,9 @@
 package dev.sweety;
 
 import dev.sweety.api.sql4j.SqlUtils;
-import dev.sweety.connection.SQLiteConnection;
-import dev.sweety.table.Table;
-import dev.sweety.table.TableManager;
+import dev.sweety.sql4j.connection.SQLiteConnection;
+import dev.sweety.sql4j.table.Table;
+import dev.sweety.sql4j.table.TableManager;
 import dev.sweety.tables.Order;
 import dev.sweety.tables.User;
 

@@ -1,13 +1,13 @@
 package dev.sweety.connection;
 
-import dev.sweety.api.SQLConnection;
+import dev.sweety.api.sql4j.connection.SQLConnection;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Executor;
 
-import static dev.sweety.SqlUtils.EXECUTOR;
+import static dev.sweety.api.sql4j.SqlUtils.EXECUTOR;
 
 /**
  * @author mk$weety

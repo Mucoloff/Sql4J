@@ -1,31 +1,31 @@
 package dev.sweety;
 
+import dev.sweety.api.sql4j.SqlUtils;
 import dev.sweety.connection.SQLiteConnection;
 import dev.sweety.table.Table;
+import dev.sweety.table.TableManager;
 import dev.sweety.tables.Order;
 import dev.sweety.tables.User;
-import java.sql.SQLException;
 
 public class Main {
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) {
 
-        Settings.DEBUG = true;
+        SqlUtils.DEBUG = true;
 
         SQLiteConnection connection = new SQLiteConnection("database");
 
-        Table<User> users = SqlUtils.create(User.class, connection);
-        Table<Order> orders = SqlUtils.create(Order.class, connection);
+        Table<User> userTable = TableManager.create(User.class, connection);
+        Table<Order> orderTable = TableManager.create(Order.class, connection);
 
         User user = new User("User");
         Order order = new Order("Product", user);
 
-        users.insert(user);
-        orders.insert(order);
 
-        users.print();
-        orders.printAsync();
+        userTable.insert(user);
+        orderTable.insert(order);
 
-        connection.close();
+
+
     }
 }

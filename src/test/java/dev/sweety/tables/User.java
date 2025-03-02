@@ -1,8 +1,8 @@
 package dev.sweety.tables;
 
-import dev.sweety.annotations.table.Info;
-import dev.sweety.annotations.field.DataField;
-import dev.sweety.annotations.field.PrimaryKey;
+import dev.sweety.api.sql4j.table.Info;
+import dev.sweety.api.sql4j.field.DataField;
+import dev.sweety.api.sql4j.field.PrimaryKey;
 
 /**
  * @author mk$weety

@@ -17,6 +17,9 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.9'
 
+    var api = project(':Sql4J-api')
+    implementation api
+    compileOnly api
 }
 
 publishing {
@@ -38,5 +41,8 @@ shadowJar {
     archiveBaseName.set('Sql4J')
     archiveClassifier.set('')
     archiveVersion.set(version)
+    dependencies {
+        include(dependency(':Sql4J-api'))
+    }
 }
 

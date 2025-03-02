@@ -1,2 +1,3 @@
 rootProject.name = 'Sql4J'
+include 'Sql4J-api'
 

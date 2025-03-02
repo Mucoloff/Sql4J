@@ -1,91 +1,83 @@
 package dev.sweety.fields;
 
-import com.google.gson.Gson;
-import dev.sweety.SqlUtils;
-import dev.sweety.annotations.adapter.FieldAdapter;
-import dev.sweety.annotations.field.ForeignKey;
-import dev.sweety.annotations.field.PrimaryKey;
-import dev.sweety.api.Adapter;
-import dev.sweety.api.SQLConnection;
+import dev.sweety.api.sql4j.SqlUtils;
+import dev.sweety.api.sql4j.adapter.Adapter;
+import dev.sweety.api.sql4j.adapter.FieldAdapter;
+import dev.sweety.api.sql4j.connection.SQLConnection;
+import dev.sweety.api.sql4j.field.DataField;
+import dev.sweety.api.sql4j.field.ForeignKey;
+import dev.sweety.api.sql4j.field.IField;
+import dev.sweety.api.sql4j.field.PrimaryKey;
+import dev.sweety.table.Table;
+import dev.sweety.table.TableManager;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
-/**
- * @author mk$weety
- * SqlField represents a field in a SQL table with its associated metadata and methods for serialization and deserialization.
- */
-public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey, String query,
-                       String defaultValue,
-                       Field field, SQLConnection connection) {
+import static dev.sweety.api.sql4j.SqlUtils.gson;
 
-    public void accessible() {
-        field.setAccessible(true);
-    }
+public record SqlField(String name, Field field, SQLConnection connection, PrimaryKey primaryKey, ForeignKey foreignKey,
+                       String query, String defaultValue) implements IField {
 
-    public <T> void set(T obj, Object value) throws SQLException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        accessible();
-        field.set(obj, deserialize(value));
-    }
+    public static SqlField sqlField(Field field, SQLConnection connection) {
 
-    public <T> String get(T obj) {
-        try {
-            accessible();
-            return serialize(field.get(obj));
-        } catch (Exception e) {
-            return defaultValue;
-        }
-    }
+        StringBuilder query = new StringBuilder();
+        DataField info = field.getAnnotation(DataField.class);
+        String name = info == null || info.name().isEmpty() ? field.getName() : info.name();
 
-    public static final Gson gson = new Gson().newBuilder().disableHtmlEscaping().create();
+        query.append(name).append(" ").append(SqlUtils.getType(field));
 
-    public <T> String serialize(T value) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        if (value == null) return "null";
+        String defaultValue = null;
 
-        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
-        if (fieldAdapter != null) {
-            // noinspection unchecked
-            Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
-            return adapter.serialize(value);
+        if (info != null) {
+            if (info.notNull()) query.append(" NOTNULL");
+            if (info.unique()) query.append(" UNIQUE");
+            if (!info.value().isEmpty() && !info.value().isBlank()) defaultValue = info.value();
         }
 
+        PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
+        if (primaryKey != null) {
+            query.append(" PRIMARY KEY");
+            if (primaryKey.autoIncrement()) query.append(" AUTOINCREMENT");
+        }
+
+        boolean hasForeignKey = false;
+        String table = "", tableId = "";
+
+        ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
         if (foreignKey != null) {
-            return SqlUtils.tables.get(field.getType()).primaryKey().get(value);
+            hasForeignKey = true;
+            table = foreignKey.table();
+            tableId = foreignKey.tableId();
         }
 
-        if (isSupported()) return String.valueOf(value);
-        if (value instanceof Enum<?> e) return e.name();
+        Class<?> type = field.getType();
+        Optional<? extends Table<?>> opt = TableManager.get(type);
 
-        return gson.toJson(value);
-    }
-
-    private <T> Object deserialize(Object object) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, SQLException {
-        if (object == null) return null;
-
-        String str = object.toString();
-
-        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
-        if (fieldAdapter != null) {
-            // noinspection unchecked
-            Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
-            return adapter.deserialize(str);
+        if (opt.isPresent()) {
+            hasForeignKey = true;
+            Table<?> t = opt.get();
+            if (table.isBlank()) table = t.name();
+            if (tableId.isBlank()) tableId = t.primaryKey().name();
         }
 
-        if (foreignKey != null) {
-            return SqlUtils.tables.get(field.getType()).selectWhere(foreignKey.tableId() + " = " + str).getFirst();
+        if (hasForeignKey) {
+            query.append(", FOREIGN KEY (").append(name).append(") REFERENCES ")
+                    .append(table)
+                    .append("(")
+                    .append(tableId)
+                    .append(")");
         }
 
-        if (isSupported()) return object;
+        ForeignKey newForeignKey = SqlUtils.getForeignKey(table, tableId, hasForeignKey);
 
-        if (field.getType().isEnum()) {
-            // noinspection unchecked
-            return Enum.valueOf(((Class<Enum>) field.getType()), str);
-        }
-
-        return gson.fromJson(str, field.getType());
+        return new SqlField(name, field, connection, primaryKey, newForeignKey, query.toString(), defaultValue);
     }
 
     public boolean isSupported() {
@@ -110,16 +102,170 @@ public record SqlField(String name, PrimaryKey primaryKey, ForeignKey foreignKey
         if (type == Clob.class) return true;
 
         if (type == BigDecimal.class) return true;
-        if (type == BigInteger.class) return true;
-
-        return false;
+        return type == BigInteger.class;
     }
 
-    public boolean autoIncrement() {
-        return primaryKey != null && primaryKey.autoIncrement();
+    public <T> String get(T entity) {
+        field.setAccessible(true);
+        try {
+            return serialize(field.get(entity));
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return null;
     }
 
-    public boolean hasPrimaryKey() {
-        return primaryKey != null;
+    public <T> void set(T entity, Object value) {
+        field.setAccessible(true);
+        try {
+            field.set(entity, deserialize(value));
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    public <T> String serialize(T value) throws Exception {
+        if (value == null) return "null";
+
+        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
+        if (fieldAdapter != null) {
+            // noinspection unchecked
+            Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
+            return adapter.serialize(value);
+        }
+
+        if (foreignKey != null) {
+            Optional<? extends Table<?>> table = TableManager.get(field.getType());
+            if (table.isPresent()) return table.get().primaryKey().get(value);
+        }
+
+        if (isSupported()) return String.valueOf(value);
+        if (value instanceof Enum<?> e) return e.name();
+
+        return gson.toJson(value);
+    }
+
+    public <T> Object deserialize(Object object) throws Exception {
+        if (object == null) return null;
+
+        String str = object.toString();
+
+        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
+        if (fieldAdapter != null) {
+            // noinspection unchecked
+            Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
+            return adapter.deserialize(str);
+        }
+
+        if (foreignKey != null) {
+            Optional<? extends Table<?>> table = TableManager.get(field.getType());
+            if (table.isPresent()) return table.get().selectWhere(foreignKey.tableId() + " = ?", str).getFirst();
+        }
+
+        if (isSupported()) return object;
+
+        if (field.getType().isEnum()) {
+            // noinspection unchecked
+            return Enum.valueOf(((Class<Enum>) field.getType()), str);
+        }
+
+        return gson.fromJson(str, field.getType());
+    }
+
+    public <T> CompletableFuture<String> getAsync(T entity) {
+        field.setAccessible(true);
+        try {
+            return serializeAsync(field.get(entity));
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
+    public <T> CompletableFuture<Void> setAsync(T entity, Object value)  {
+        field.setAccessible(true);
+        try {
+            return deserializeAsync(value).thenAccept(a -> {
+                try {
+                    field.set(entity, a);
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return null;
+    }
+
+    public <T> CompletableFuture<String> serializeAsync(T value) {
+        if (value == null) return CompletableFuture.completedFuture("null");
+
+        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
+        if (fieldAdapter != null) {
+
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    // noinspection unchecked
+                    Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
+                    return adapter.serialize(value);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                         NoSuchMethodException e) {
+                    return "null|" + e.getMessage();
+                }
+            }, connection.executor());
+        }
+
+        if (foreignKey != null) {
+            Optional<? extends Table<?>> table = TableManager.get(field.getType());
+            if (table.isPresent()) return table.get().primaryKey().getAsync(value);
+        }
+
+        return CompletableFuture.supplyAsync(() -> {
+            if (isSupported()) return String.valueOf(value);
+            if (value instanceof Enum<?> e) return e.name();
+
+            return gson.toJson(value);
+        }, connection.executor());
+    }
+
+    public <T> CompletableFuture<Object> deserializeAsync(Object object) throws Exception {
+        if (object == null) return CompletableFuture.completedFuture(null);
+
+        String str = object.toString();
+
+        FieldAdapter fieldAdapter = field.getAnnotation(FieldAdapter.class);
+        if (fieldAdapter != null) {
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    // noinspection unchecked
+                    Adapter<T> adapter = (Adapter<T>) fieldAdapter.adapter().getDeclaredConstructor().newInstance();
+                    return adapter.deserialize(str);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                         NoSuchMethodException e) {
+                    e.printStackTrace(System.err);
+                }
+
+                return null;
+
+            }, connection.executor());
+        }
+
+        if (foreignKey != null) {
+            Optional<? extends Table<?>> table = TableManager.get(field.getType());
+            if (table.isPresent())
+                return table.get().selectWhereAsync(foreignKey.tableId() + " = ?", str).thenApply(List::getFirst);
+        }
+
+        return CompletableFuture.supplyAsync(() -> {
+            if (isSupported()) return object;
+
+            if (field.getType().isEnum()) {
+                // noinspection unchecked
+                return Enum.valueOf(((Class<Enum>) field.getType()), str);
+            }
+
+            return gson.fromJson(str, field.getType());
+        }, connection.executor());
     }
 }

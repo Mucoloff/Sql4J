@@ -3,4 +3,4 @@ jdk:
 
 build:
   commands:
-    - ./gradlew build
+    - ./gradlew shadowJar

@@ -1,13 +1,13 @@
 package dev.sweety.connection;
 
-import dev.sweety.api.SQLConnection;
+import dev.sweety.api.sql4j.connection.SQLConnection;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Executor;
 
-import static dev.sweety.SqlUtils.EXECUTOR;
+import static dev.sweety.api.sql4j.SqlUtils.EXECUTOR;
 
 /**
  * @author mk$weety
@@ -39,34 +39,17 @@ public class MySQLConnection implements SQLConnection {
         this.password = password;
     }
 
-    /**
-     * Connects to the MySQL database.
-     *
-     * @return the database connection
-     * @throws SQLException if a database access error occurs
-     */
     @Override
     public Connection connect() throws SQLException {
         return this.connection = DriverManager.getConnection(url(), user, password);
     }
 
-    /**
-     * Returns the current database connection, connecting if necessary.
-     *
-     * @return the database connection
-     * @throws SQLException if a database access error occurs
-     */
     @Override
     public Connection connection() throws SQLException {
         if (connection == null || connection.isClosed()) return connect();
         return connection;
     }
 
-    /**
-     * Returns the connection URL for MySQL.
-     *
-     * @return the connection URL
-     */
     @Override
     public String url() {
         return "jdbc:mysql://" + host + ":" + port + "/" + database;

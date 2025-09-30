@@ -1,4 +1,4 @@
-package dev.sweety.sql4j.connection;
+package dev.sweety.sql4j.impl.connection;
 
 public class MariaDBConnection extends MySQLConnection {
 

@@ -1,17 +1,18 @@
-package dev.sweety.sql4j.table;
+package dev.sweety.sql4j.impl.table;
 
-import dev.sweety.api.sql4j.SqlUtils;
-import dev.sweety.api.sql4j.connection.SQLConnection;
-import dev.sweety.api.sql4j.table.Info;
-import dev.sweety.sql4j.fields.SqlField;
+import dev.sweety.sql4j.api.SqlUtils;
+import dev.sweety.sql4j.api.connection.SQLConnection;
+import dev.sweety.sql4j.api.table.Info;
+import dev.sweety.sql4j.impl.fields.SqlField;
 
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TableManager {
 
-    private static final Map<Class<?>, Table<?>> tables = new HashMap<>();
+    private static final ConcurrentHashMap<Class<?>, Table<?>> tables = new ConcurrentHashMap<>();
 
     public static <T> Optional<Table<T>> get(Class<T> clazz) {
         // noinspection unchecked

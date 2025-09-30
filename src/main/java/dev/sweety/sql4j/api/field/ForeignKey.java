@@ -1,4 +1,4 @@
-package dev.sweety.api.sql4j.field;
+package dev.sweety.sql4j.api.field;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

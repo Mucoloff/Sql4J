@@ -1,4 +1,4 @@
-package dev.sweety.api.sql4j.field;
+package dev.sweety.sql4j.api.field;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,8 +7,14 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface PrimaryKey {
+public @interface DataField {
 
-    boolean autoIncrement() default false;
+    String name() default "";
+
+    boolean notNull() default false;
+
+    boolean unique() default false;
+
+    String value() default "";
 
 }

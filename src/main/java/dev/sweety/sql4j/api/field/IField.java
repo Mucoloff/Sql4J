@@ -1,6 +1,6 @@
-package dev.sweety.api.sql4j.field;
+package dev.sweety.sql4j.api.field;
 
-import dev.sweety.api.sql4j.connection.SQLConnection;
+import dev.sweety.sql4j.api.connection.SQLConnection;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;

@@ -1,6 +1,6 @@
-package dev.sweety.api.sql4j.connection;
+package dev.sweety.sql4j.api.connection;
 
-import dev.sweety.api.sql4j.SqlUtils;
+import dev.sweety.sql4j.api.SqlUtils;
 
 import java.sql.*;
 import java.util.Arrays;

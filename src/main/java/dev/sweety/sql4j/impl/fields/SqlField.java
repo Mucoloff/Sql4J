@@ -1,15 +1,15 @@
-package dev.sweety.sql4j.fields;
+package dev.sweety.sql4j.impl.fields;
 
-import dev.sweety.api.sql4j.SqlUtils;
-import dev.sweety.api.sql4j.adapter.Adapter;
-import dev.sweety.api.sql4j.adapter.FieldAdapter;
-import dev.sweety.api.sql4j.connection.SQLConnection;
-import dev.sweety.api.sql4j.field.DataField;
-import dev.sweety.api.sql4j.field.ForeignKey;
-import dev.sweety.api.sql4j.field.IField;
-import dev.sweety.api.sql4j.field.PrimaryKey;
-import dev.sweety.sql4j.table.Table;
-import dev.sweety.sql4j.table.TableManager;
+import dev.sweety.sql4j.api.SqlUtils;
+import dev.sweety.sql4j.api.adapter.Adapter;
+import dev.sweety.sql4j.api.adapter.FieldAdapter;
+import dev.sweety.sql4j.api.connection.SQLConnection;
+import dev.sweety.sql4j.api.field.DataField;
+import dev.sweety.sql4j.api.field.ForeignKey;
+import dev.sweety.sql4j.api.field.IField;
+import dev.sweety.sql4j.api.field.PrimaryKey;
+import dev.sweety.sql4j.impl.table.Table;
+import dev.sweety.sql4j.impl.table.TableManager;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static dev.sweety.api.sql4j.SqlUtils.gson;
+import static dev.sweety.sql4j.api.SqlUtils.gson;
 
 public record SqlField(String name, Field field, SQLConnection connection, PrimaryKey primaryKey, ForeignKey foreignKey,
                        String query, String defaultValue) implements IField {

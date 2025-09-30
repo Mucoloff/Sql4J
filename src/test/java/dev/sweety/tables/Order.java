@@ -1,9 +1,9 @@
 package dev.sweety.tables;
 
-import dev.sweety.api.sql4j.table.Info;
-import dev.sweety.api.sql4j.field.DataField;
-import dev.sweety.api.sql4j.field.ForeignKey;
-import dev.sweety.api.sql4j.field.PrimaryKey;
+import dev.sweety.sql4j.api.table.Info;
+import dev.sweety.sql4j.api.field.DataField;
+import dev.sweety.sql4j.api.field.ForeignKey;
+import dev.sweety.sql4j.api.field.PrimaryKey;
 
 @Info(name = "orders")
 public class Order {

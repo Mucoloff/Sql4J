@@ -1,20 +1,20 @@
-package dev.sweety.sql4j.table;
+package dev.sweety.sql4j.impl.table;
 
-import dev.sweety.api.sql4j.connection.SQLConnection;
-import dev.sweety.api.sql4j.table.ITable;
-import dev.sweety.sql4j.fields.SqlField;
+import dev.sweety.sql4j.api.connection.SQLConnection;
+import dev.sweety.sql4j.api.table.ITable;
+import dev.sweety.sql4j.impl.fields.SqlField;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
-                       SqlField primaryKey, List<SqlField> sqlFields) implements ITable<T> {
+public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection connection,
+                            SqlField primaryKey, List<SqlField> sqlFields) implements ITable<Entity> {
 
 
     @Override
-    public void insert(T entity) {
+    public void insert(Entity entity) {
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(name()).append("(");
 
@@ -55,7 +55,7 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public CompletableFuture<Void> insertAsync(T entity) {
+    public CompletableFuture<Void> insertAsync(Entity entity) {
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(name()).append("(");
 
@@ -96,13 +96,13 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public List<T> select(String query, Object... params) {
-        List<T> resultList = new ArrayList<>();
+    public List<Entity> select(String query, Object... params) {
+        List<Entity> resultList = new ArrayList<>();
 
         try (ResultSet resultSet = connection.executeQuery(query, params)) {
 
             while (resultSet.next()) {
-                T obj = clazz().getDeclaredConstructor().newInstance();
+                Entity obj = clazz().getDeclaredConstructor().newInstance();
                 for (SqlField field : sqlFields()) {
                     field.set(obj, resultSet.getObject(field.name()));
                 }
@@ -116,15 +116,14 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public CompletableFuture<List<T>> selectAsync(String query, Object... params) {
-
+    public CompletableFuture<List<Entity>> selectAsync(String query, Object... params) {
 
         return connection.executeQueryAsync(query, params).thenApply(resultSet -> {
-            List<T> resultList = new ArrayList<>();
+            List<Entity> resultList = new ArrayList<>();
 
             try {
                 while (resultSet.next()) {
-                    T obj = clazz().getDeclaredConstructor().newInstance();
+                    Entity obj = clazz().getDeclaredConstructor().newInstance();
                     for (SqlField field : sqlFields()) {
                         field.setAsync(obj, resultSet.getObject(field.name()));
                     }
@@ -141,27 +140,27 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public List<T> selectWhere(String filter, Object... params) {
+    public List<Entity> selectWhere(String filter, Object... params) {
         return select("SELECT * FROM " + name() + " WHERE " + filter, params);
     }
 
     @Override
-    public CompletableFuture<List<T>> selectWhereAsync(String filter, Object... params) {
+    public CompletableFuture<List<Entity>> selectWhereAsync(String filter, Object... params) {
         return selectAsync("SELECT * FROM " + name() + " WHERE " + filter, params);
     }
 
     @Override
-    public List<T> selectAll() {
+    public List<Entity> selectAll() {
         return select("SELECT * FROM " + name());
     }
 
     @Override
-    public CompletableFuture<List<T>> selectAllAsync() {
+    public CompletableFuture<List<Entity>> selectAllAsync() {
         return selectAsync("SELECT * FROM " + name());
     }
 
     @Override
-    public void update(T entity) {
+    public void update(Entity entity) {
         StringBuilder query = new StringBuilder("UPDATE ");
         query.append(name()).append(" SET ");
 
@@ -206,7 +205,7 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public CompletableFuture<Void> updateAsync(T entity) {
+    public CompletableFuture<Void> updateAsync(Entity entity) {
         StringBuilder query = new StringBuilder("UPDATE ");
         query.append(name()).append(" SET ");
 
@@ -249,7 +248,7 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public void delete(T entity){
+    public void delete(Entity entity){
         StringBuilder query = new StringBuilder("DELETE FROM ");
         query.append(name()).append(" WHERE ");
 
@@ -269,7 +268,7 @@ public record Table<T>(String name, Class<T> clazz, SQLConnection connection,
     }
 
     @Override
-    public CompletableFuture<Integer> deleteAsync(T entity){
+    public CompletableFuture<Integer> deleteAsync(Entity entity){
         StringBuilder query = new StringBuilder("DELETE FROM ");
         query.append(name()).append(" WHERE ");
 

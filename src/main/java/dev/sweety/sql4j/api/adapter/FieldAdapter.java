@@ -1,4 +1,4 @@
-package dev.sweety.api.sql4j.adapter;
+package dev.sweety.sql4j.api.adapter;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

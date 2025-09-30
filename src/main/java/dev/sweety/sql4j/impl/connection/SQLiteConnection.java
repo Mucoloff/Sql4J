@@ -1,13 +1,13 @@
-package dev.sweety.sql4j.connection;
+package dev.sweety.sql4j.impl.connection;
 
-import dev.sweety.api.sql4j.connection.SQLConnection;
+import dev.sweety.sql4j.api.connection.SQLConnection;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Executor;
 
-import static dev.sweety.api.sql4j.SqlUtils.EXECUTOR;
+import static dev.sweety.sql4j.api.SqlUtils.EXECUTOR;
 
 public class SQLiteConnection implements SQLConnection {
     private String database;

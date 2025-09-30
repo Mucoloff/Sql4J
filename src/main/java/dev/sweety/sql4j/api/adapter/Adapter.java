@@ -1,4 +1,4 @@
-package dev.sweety.api.sql4j.adapter;
+package dev.sweety.sql4j.api.adapter;
 
 public interface Adapter<T> {
 

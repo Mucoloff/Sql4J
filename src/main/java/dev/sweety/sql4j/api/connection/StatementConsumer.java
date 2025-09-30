@@ -1,4 +1,4 @@
-package dev.sweety.api.sql4j.connection;
+package dev.sweety.sql4j.api.connection;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

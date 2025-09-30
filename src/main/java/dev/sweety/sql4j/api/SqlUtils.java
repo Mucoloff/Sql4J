@@ -1,11 +1,11 @@
-package dev.sweety.api.sql4j;
+package dev.sweety.sql4j.api;
 
 import com.google.gson.Gson;
-import dev.sweety.api.sql4j.adapter.FieldAdapter;
-import dev.sweety.api.sql4j.adapter.SqlType;
-import dev.sweety.api.sql4j.field.DataField;
-import dev.sweety.api.sql4j.field.ForeignKey;
-import dev.sweety.api.sql4j.field.PrimaryKey;
+import dev.sweety.sql4j.api.adapter.FieldAdapter;
+import dev.sweety.sql4j.api.adapter.SqlType;
+import dev.sweety.sql4j.api.field.DataField;
+import dev.sweety.sql4j.api.field.ForeignKey;
+import dev.sweety.sql4j.api.field.PrimaryKey;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

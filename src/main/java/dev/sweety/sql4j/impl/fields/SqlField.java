@@ -33,7 +33,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         String defaultValue = null;
 
         if (info != null) {
-            if (info.notNull()) query.append(" NOTNULL");
+            if (info.notNull()) query.append(" NOT NULL");
             if (info.unique()) query.append(" UNIQUE");
             if (!info.value().isEmpty() && !info.value().isBlank()) defaultValue = info.value();
         }
@@ -135,7 +135,10 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
 
         if (foreignKey != null) {
             Optional<? extends Table<?>> table = TableManager.get(field.getType());
-            if (table.isPresent()) return table.get().selectWhere(foreignKey.tableId() + " = ?", str).getFirst();
+            if (table.isPresent()) {
+                List<?> objects = table.get().selectWhere(foreignKey.tableId() + " = ?", str);
+                return objects.isEmpty() ? null : objects.getFirst();
+            }
         }
 
         if (isSupported()) return object;
@@ -160,7 +163,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
     }
 
     @Override
-    public <T> CompletableFuture<Void> setAsync(T entity, Object value)  {
+    public <T> CompletableFuture<Void> setAsync(T entity, Object value) {
         field.setAccessible(true);
         try {
             return deserializeAsync(value).thenAccept(a -> {
@@ -173,7 +176,7 @@ public record SqlField(String name, Field field, SQLConnection connection, Prima
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

@@ -22,10 +22,6 @@ public interface ITable<T> {
 
     CompletableFuture<Void> insertAsync(T entity);
 
-    List<T> select(String query, Object... params);
-
-    CompletableFuture<List<T>> selectAsync(String query, Object... params);
-
     List<T> selectWhere(String filter, Object... params);
 
     CompletableFuture<List<T>> selectWhereAsync(String filter, Object... params);

@@ -1,11 +1,13 @@
 package dev.sweety.sql4j.impl.table;
 
+import dev.sweety.sql4j.api.SqlUtils;
 import dev.sweety.sql4j.api.connection.SQLConnection;
 import dev.sweety.sql4j.api.table.ITable;
 import dev.sweety.sql4j.impl.fields.SqlField;
 
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -95,11 +97,42 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
         }, params.toArray(Object[]::new));
     }
 
+
     @Override
-    public List<Entity> select(String query, Object... params) {
+    public List<Entity> selectWhere(String filter, Object... params) {
         List<Entity> resultList = new ArrayList<>();
 
-        try (ResultSet resultSet = connection.executeQuery(query, params)) {
+        try (PreparedStatement statement = connection.connection().prepareStatement("SELECT * FROM " + name() + " WHERE " + filter + ";")) {
+
+            connection.setParameters(statement, params);
+
+            try (ResultSet resultSet = statement.executeQuery()){
+                while (resultSet.next()) {
+                    Entity obj = clazz().getDeclaredConstructor().newInstance();
+                    for (SqlField field : sqlFields()) {
+                        field.set(obj, resultSet.getObject(field.name()));
+                    }
+                    resultList.add(obj);
+                }
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return resultList;
+    }
+
+    @Override
+    public CompletableFuture<List<Entity>> selectWhereAsync(String filter, Object... params) {
+        return CompletableFuture.supplyAsync(() -> selectWhere(filter, params), connection.executor());
+    }
+
+    @Override
+    public List<Entity> selectAll() {
+        List<Entity> resultList = new ArrayList<>();
+
+        try (Statement statement = connection.connection().createStatement(); ResultSet resultSet = statement.executeQuery("SELECT * from " + name() + ";")) {
 
             while (resultSet.next()) {
                 Entity obj = clazz().getDeclaredConstructor().newInstance();
@@ -116,47 +149,8 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
     }
 
     @Override
-    public CompletableFuture<List<Entity>> selectAsync(String query, Object... params) {
-
-        return connection.executeQueryAsync(query, params).thenApply(resultSet -> {
-            List<Entity> resultList = new ArrayList<>();
-
-            try {
-                while (resultSet.next()) {
-                    Entity obj = clazz().getDeclaredConstructor().newInstance();
-                    for (SqlField field : sqlFields()) {
-                        field.setAsync(obj, resultSet.getObject(field.name()));
-                    }
-                    resultList.add(obj);
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-            return resultList;
-        });
-
-
-    }
-
-    @Override
-    public List<Entity> selectWhere(String filter, Object... params) {
-        return select("SELECT * FROM " + name() + " WHERE " + filter, params);
-    }
-
-    @Override
-    public CompletableFuture<List<Entity>> selectWhereAsync(String filter, Object... params) {
-        return selectAsync("SELECT * FROM " + name() + " WHERE " + filter, params);
-    }
-
-    @Override
-    public List<Entity> selectAll() {
-        return select("SELECT * FROM " + name());
-    }
-
-    @Override
     public CompletableFuture<List<Entity>> selectAllAsync() {
-        return selectAsync("SELECT * FROM " + name());
+        return CompletableFuture.supplyAsync(this::selectAll, connection.executor());
     }
 
     @Override
@@ -248,7 +242,7 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
     }
 
     @Override
-    public void delete(Entity entity){
+    public void delete(Entity entity) {
         StringBuilder query = new StringBuilder("DELETE FROM ");
         query.append(name()).append(" WHERE ");
 
@@ -268,7 +262,7 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
     }
 
     @Override
-    public CompletableFuture<Integer> deleteAsync(Entity entity){
+    public CompletableFuture<Integer> deleteAsync(Entity entity) {
         StringBuilder query = new StringBuilder("DELETE FROM ");
         query.append(name()).append(" WHERE ");
 

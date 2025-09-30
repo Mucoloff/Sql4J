@@ -26,7 +26,7 @@ public interface SQLConnection {
 
     default <T> T execute(String query, StatementConsumer<T> function) {
         try (Connection connection = connection(); PreparedStatement statement = connection.prepareStatement(query)) {
-            if (SqlUtils.DEBUG) System.out.println("query: " + query);
+
             return function.accept(statement);
         } catch (SQLException e) {
             SqlUtils.logger.log(System.Logger.Level.ERROR, "query: " + query);
@@ -42,7 +42,7 @@ public interface SQLConnection {
 
     default ResultSet executeQuery(String query, Object... params) {
         try (Connection connection = connection(); PreparedStatement statement = connection.prepareStatement(query)) {
-            if (SqlUtils.DEBUG) System.out.println("query: " + query);
+
             setParameters(statement, params);
 
             return statement.executeQuery();
@@ -60,7 +60,7 @@ public interface SQLConnection {
 
     default int executeUpdate(String query, Object... params) {
         try (Connection connection = connection(); PreparedStatement statement = connection.prepareStatement(query)) {
-            if (SqlUtils.DEBUG) System.out.println("query: " + query);
+
             setParameters(statement, params);
 
             return statement.executeUpdate();
@@ -78,7 +78,7 @@ public interface SQLConnection {
 
     default <T> T update(String query, StatementConsumer<T> function, Object... params) {
         try (Connection connection = connection(); PreparedStatement statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            if (SqlUtils.DEBUG) System.out.println("query: " + query);
+
 
             setParameters(statement, params);
             statement.executeUpdate();
@@ -115,12 +115,24 @@ public interface SQLConnection {
 
     default void execute(String query) {
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
-            if (SqlUtils.DEBUG) System.out.println("query: " + query);
+
             statement.execute(query);
         } catch (SQLException e) {
 
             SqlUtils.logger.log(System.Logger.Level.ERROR, "query: " + query);
             e.printStackTrace(System.err);
         }
+    }
+
+    default CompletableFuture<Connection> connectAsync() {
+        CompletableFuture<Connection> connectionFuture = new CompletableFuture<>();
+        executor().execute(() -> {
+            try {
+                connectionFuture.complete(connect());
+            } catch (SQLException e) {
+                e.printStackTrace(System.err);
+            }
+        });
+        return connectionFuture;
     }
 }

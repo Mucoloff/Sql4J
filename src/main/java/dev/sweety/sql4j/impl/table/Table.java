@@ -1,13 +1,13 @@
 package dev.sweety.sql4j.impl.table;
 
-import dev.sweety.sql4j.api.SqlUtils;
 import dev.sweety.sql4j.api.connection.SQLConnection;
 import dev.sweety.sql4j.api.table.ITable;
 import dev.sweety.sql4j.impl.fields.SqlField;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -102,11 +102,11 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
     public List<Entity> selectWhere(String filter, Object... params) {
         List<Entity> resultList = new ArrayList<>();
 
-        try (PreparedStatement statement = connection.connection().prepareStatement("SELECT * FROM " + name() + " WHERE " + filter + ";")) {
+        try (Connection connection = this.connection.connection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + name() + " WHERE " + filter + ";")) {
 
-            connection.setParameters(statement, params);
+            this.connection.setParameters(statement, params);
 
-            try (ResultSet resultSet = statement.executeQuery()){
+            try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     Entity obj = clazz().getDeclaredConstructor().newInstance();
                     for (SqlField field : sqlFields()) {
@@ -125,19 +125,60 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
 
     @Override
     public CompletableFuture<List<Entity>> selectWhereAsync(String filter, Object... params) {
-        return CompletableFuture.supplyAsync(() -> selectWhere(filter, params), connection.executor());
+        return CompletableFuture.supplyAsync(() -> {
+            List<Entity> resultList = new ArrayList<>();
+
+            CompletableFuture<Connection> connectionFuture = this.connection.connectAsync();
+
+            try (Connection connection = connectionFuture.join()){
+                try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + name() + " WHERE " + filter + ";")) {
+
+                    this.connection.setParameters(statement, params);
+
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        while (resultSet.next()) {
+                            Entity obj = clazz().getDeclaredConstructor().newInstance();
+                            for (SqlField field : sqlFields()) {
+                                field.set(obj, resultSet.getObject(field.name()));
+                            }
+                            resultList.add(obj);
+                        }
+                    }
+
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+            return resultList;
+        }, connection.executor());
     }
 
     @Override
     public List<Entity> selectAll() {
         List<Entity> resultList = new ArrayList<>();
 
-        try (Statement statement = connection.connection().createStatement(); ResultSet resultSet = statement.executeQuery("SELECT * from " + name() + ";")) {
+        try (Connection connection = this.connection.connection();
+             PreparedStatement ps = connection.prepareStatement("SELECT * from " + name() + ";");
+             ResultSet rs = ps.executeQuery()) {
 
-            while (resultSet.next()) {
-                Entity obj = clazz().getDeclaredConstructor().newInstance();
+            List<Object[]> rows = new ArrayList<>();
+
+            while (rs.next()) {
+                Object[] values = new Object[sqlFields().size()];
+                int i = 0;
                 for (SqlField field : sqlFields()) {
-                    field.set(obj, resultSet.getObject(field.name()));
+                    values[i++] = rs.getObject(field.name());
+                }
+                rows.add(values);
+            }
+
+            // Ora rs e ps sono chiusi, ricostruisci le entity
+            for (Object[] row : rows) {
+                Entity obj = clazz().getDeclaredConstructor().newInstance();
+                int i = 0;
+                for (SqlField field : sqlFields()) {
+                    field.set(obj, row[i++]);
                 }
                 resultList.add(obj);
             }
@@ -145,13 +186,51 @@ public record Table<Entity>(String name, Class<Entity> clazz, SQLConnection conn
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
+
         return resultList;
     }
 
+
     @Override
     public CompletableFuture<List<Entity>> selectAllAsync() {
-        return CompletableFuture.supplyAsync(this::selectAll, connection.executor());
+        return CompletableFuture.supplyAsync(() -> {
+            List<Entity> resultList = new ArrayList<>();
+
+            CompletableFuture<Connection> connectionFuture = this.connection.connectAsync();
+
+            try (Connection connection = connectionFuture.join();
+                 PreparedStatement ps = connection.prepareStatement("SELECT * from " + name() + ";");
+                 ResultSet rs = ps.executeQuery()) {
+
+                List<Object[]> rows = new ArrayList<>();
+
+                while (rs.next()) {
+                    Object[] values = new Object[sqlFields().size()];
+                    int i = 0;
+                    for (SqlField field : sqlFields()) {
+                        values[i++] = rs.getObject(field.name());
+                    }
+                    rows.add(values);
+                }
+
+                // Ora rs e ps sono chiusi, ricostruisci le entity
+                for (Object[] row : rows) {
+                    Entity obj = clazz().getDeclaredConstructor().newInstance();
+                    int i = 0;
+                    for (SqlField field : sqlFields()) {
+                        field.set(obj, row[i++]);
+                    }
+                    resultList.add(obj);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+
+            return resultList;
+        }, connection.executor()); // usa pure il tuo executor
     }
+
 
     @Override
     public void update(Entity entity) {
